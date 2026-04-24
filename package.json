@@ -1,0 +1,21 @@
+{
+  "name": "web-notification-test",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm@11.6.2",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "clean": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"Remove-Item -Recurse -Force .turbo, apps/web/.next, apps/api/dist -ErrorAction SilentlyContinue\"",
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "generate:vapid": "web-push generate-vapid-keys"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.0",
+    "typescript": "^5.8.3",
+    "web-push": "^3.6.7"
+  }
+}
