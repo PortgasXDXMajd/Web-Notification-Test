@@ -39,6 +39,16 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 }
 
+function applicationServerKeyMatches(stored: ArrayBuffer | null, expected: Uint8Array) {
+  if (!stored) return false;
+  const storedView = new Uint8Array(stored);
+  if (storedView.byteLength !== expected.byteLength) return false;
+  for (let i = 0; i < expected.byteLength; i++) {
+    if (storedView[i] !== expected[i]) return false;
+  }
+  return true;
+}
+
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${apiUrl}${path}`, {
     ...init,
@@ -117,12 +127,22 @@ export default function Home() {
         return;
       }
 
-      const existingSubscription = await registration.pushManager.getSubscription();
+      const expectedKey = urlBase64ToUint8Array(vapidPublicKey);
+      let existingSubscription = await registration.pushManager.getSubscription();
+
+      if (
+        existingSubscription &&
+        !applicationServerKeyMatches(existingSubscription.options.applicationServerKey, expectedKey)
+      ) {
+        await existingSubscription.unsubscribe();
+        existingSubscription = null;
+      }
+
       const subscription =
         existingSubscription ??
         (await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+          applicationServerKey: expectedKey
         }));
 
       const nextStats = await requestJson<Stats>('/push/subscribe', {
